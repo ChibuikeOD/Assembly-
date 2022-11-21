@@ -1,0 +1,188 @@
+#This program is a functional calculator that can handle errors and invalid inputs
+
+
+.data
+	prompt1: .asciiz "\n Enter 1st Number: \n"
+	prompt2: .asciiz "Select Operator: \n"
+	prompt3: .asciiz "Enter 2nd Number: \n"
+	operatorError: .asciiz "\n Invalid operator \n"
+	divideByZero: .asciiz "\n Cannot divide by zero \n"
+	negNumber: .asciiz "\n Negative numbers are not handled by this program /n"
+	lineBreak: .asciiz "\n"
+	displayNum: .word 
+	firstNum: .word 0
+	secondNum: .word 0 
+	result: .word 0
+	quotient: .word 0
+	remainder: .word 0
+
+
+
+.text
+OuterLoop:
+#getting first input
+la $a0, prompt1 #Text string displayed to the user
+la $a1, firstNum #word address in RAM to store input number
+jal GetInput
+
+#getting operator input
+la $a0, prompt2
+jal GetOperator
+
+#getting second input
+la $a0, prompt3
+la $a1, secondNum
+jal GetInput
+
+#figuring out which operator it is
+beq $v1, 43, addition
+beq $v1, 45, subtraction
+beq $v1, 42, multiplication
+beq $v1, 47, division
+
+#handles invalid operator error
+la $a0, operatorError
+li $v0, 4
+syscall
+j OuterLoop
+j Exit
+
+
+addition:
+la $a0, firstNum
+la $a1, secondNum
+la $a2, result
+jal AddNumb
+lw $a0, 0($a2)
+jal DisplayNumb
+j OuterLoop
+
+subtraction:
+la $a0, firstNum
+la $a1, secondNum
+la $a2, result
+jal SubNumb
+lw $a0, 0($a2)
+jal DisplayNumb
+j OuterLoop
+
+multiplication:
+la $a0, firstNum
+la $a1, secondNum
+la $a2, result
+jal MultNumb
+lw $a0, 0($a2)
+jal DisplayNumb
+j OuterLoop
+
+
+division:
+la $a0, firstNum
+la $a1, secondNum
+la $a2, quotient
+la $a3, remainder
+jal DivNumb
+lw $a0, 0($a2) 
+jal DisplayNumb# dislay quotient
+lw $a0, 0($a3)
+jal DisplayNumb # isplay remainder
+
+j OuterLoop
+
+
+Exit:
+
+
+li $v0, 10
+syscall
+
+#Gets integer input from user
+GetInput:
+li $v0, 4 #displlaying prompt1
+syscall
+
+li $v0, 5 #reading integer
+syscall
+bltz $v0, NegativeNumberError #Handles negative numbers
+sw $v0, ($a1) #stores read integer to address at $a1
+
+jr $ra
+
+
+GetOperator:
+li $v0, 4 #displaying prompt 2
+syscall
+li $v0, 12
+syscall
+move $v1, $v0
+jr $ra
+
+DisplayNumb:
+li $v0, 1 #prints string
+syscall
+#sw $a0, 0($a1) #storing the input value
+
+
+jr $ra
+
+#addition function
+AddNumb:
+lw $t0, 0($a0) #loadingg input into $t0
+lw $t1, 0($a1) #loading input into $t1
+
+add $t2, $t0, $t1
+sw $t2, 0($a2) #stores the result into the address in $a2
+jr $ra
+
+#subtraction function 
+SubNumb:
+lw $t0, 0($a0) #loadingg input into $t0
+lw $t1, 0($a1) #loading input into $t1
+sub $t2, $t0, $t1
+sw $t2, 0($a2) #stores the result into the address in $a2
+jr $ra
+
+#multiplication function
+MultNumb:
+lw $t0, 0($a0) #loadingg input into $t0
+lw $t1, 0($a1) #loading input into $t1
+mult $t1, $t0
+mflo $t2
+sw $t2, 0($a2) #stores the result into the address in $a2
+jr $ra
+
+#division function
+DivNumb:
+lw $t0, 0($a0) #loadingg input into $t0
+lw $t1, 0($a1) #loading input into $t1
+div $t0, $t1
+beq $t1, 0, DivisionError #handles division by zero
+mflo $t2
+mfhi $t3
+sw $t2, 0($a2) #storing the quotient in memory
+sw $t3, 0($a3) # storing the remainder in memory
+jr $ra
+
+#handles divide by zero
+DivisionError:
+la $a0, divideByZero
+li $v0, 4
+syscall
+j OuterLoop
+
+#handles negative numbers
+NegativeNumberError:
+la $a0, negNumber
+li $v0, 4
+syscall
+j OuterLoop
+
+
+
+
+
+
+
+
+
+
